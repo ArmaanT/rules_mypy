@@ -1,0 +1,9 @@
+load("@rules_python//python:defs.bzl", "py_library")
+
+py_library(
+    name = "type_error",
+    srcs = glob(["*.py"]),
+    # Uncommenting this tag will cause the build to fail
+    # tags = ["mypy"],
+    visibility = ["//:__subpackages__"],
+)

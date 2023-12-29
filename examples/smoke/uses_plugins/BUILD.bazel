@@ -1,0 +1,12 @@
+load("@rules_python//python:defs.bzl", "py_library")
+load("@pypi//:requirements.bzl", "requirement")
+
+py_library(
+    name = "uses_plugins",
+    srcs = glob(["*.py"]),
+    tags = ["mypy"],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        requirement("pydantic"),
+    ],
+)

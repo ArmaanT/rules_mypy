@@ -1,0 +1,62 @@
+# Bazel rules for mypy
+
+A mypy aspect that ensures bazel python targets typecheck. Similar to [bazel-mypy-integration](https://github.com/bazel-contrib/bazel-mypy-integration) except `rules_mypy` is incremental and will _not_ attempt to repeatidly typecheck all dependencies.
+
+Bazel 6+ is supported
+
+## Features
+
+- Incremental mypy typechecking for python targets
+- Allow mypy to be run in an opt-in or opt-opt fashion
+- Allow targets to opt-into mypy strict mode
+
+## Example usage and documentation
+
+Documentation for public rules is located [here](./docs/rules.md).
+
+See `examples/smoke` for a complete example of how to use `rules_mypy`.
+
+The minimal configuration needed to use `rules_mypy` looks something like a `mypy.bzl` file with the following:
+
+```bazel
+load("@rules_mypy//mypy:defs.bzl", "mypy_aspect")
+load("@pypi//:requirements.bzl", "entry_point", "requirement")
+
+mypy = mypy_aspect(
+    binary = entry_point("mypy"),
+    config = Label(":pyproject.toml"),
+    plugins = [
+        requirement("pydantic"),
+    ],
+)
+```
+
+and adding `common --aspects //:mypy.bzl%mypy` to your bazelrc.
+
+## Installation
+
+From the release you wish to use:
+<https://github.com/ArmaanT/rules_mypy/releases>
+copy the WORKSPACE snippet into your `WORKSPACE` file.
+
+To use a commit rather than a release, you can point at any SHA of the repo.
+
+For example to use commit `abc123`:
+
+1. Replace `url = "https://github.com/ArmaanT/rules_mypy/releases/download/v0.1.0/rules_mypy-v0.1.0.tar.gz"` with a GitHub-provided source archive like `url = "https://github.com/ArmaanT/rules_mypy/archive/abc123.tar.gz"`
+1. Replace `strip_prefix = "rules_mypy-0.1.0"` with `strip_prefix = "rules_mypy-abc123"`
+1. Update the `sha256`. The easiest way to do this is to comment out the line, then Bazel will
+   print a message with the correct value. Note that GitHub source archives don't have a strong
+   guarantee on the sha256 stability, see
+   <https://github.blog/2023-02-21-update-on-the-future-stability-of-source-code-archives-and-hashes/>
+
+## Known limitations
+
+- `rules_mypy` only contains a mypy aspect. Eventually it should also provide a test target and possibly indpendent rule
+- `rules_mypy` assumes all python imports are relative from the root of the workspace, custom python target `imports` likely won't work
+- `--custom-typeshed-dir` isn't used with `py_console_script_binary`
+- Windows is not supported or tested
+
+## Acknowledgements
+
+Both [bazel-mypy-integration](https://github.com/bazel-contrib/bazel-mypy-integration) and [Dropbox's mypy aspect](https://github.com/dropbox/dbx_build_tools/blob/master/build_tools/py/mypy.bzl) were used as inspiration for rules_mypy.

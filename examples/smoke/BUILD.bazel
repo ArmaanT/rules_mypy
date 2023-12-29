@@ -1,0 +1,29 @@
+load("@bazel_skylib//rules:build_test.bzl", "build_test")
+load("@rules_python//python:defs.bzl", "py_library")
+load("@rules_python//python/entry_points:py_console_script_binary.bzl", "py_console_script_binary")
+
+exports_files(["pyproject.toml"])
+
+py_console_script_binary(
+    name = "mypy",
+    pkg = "@pypi//mypy",
+    visibility = ["//visibility:public"],
+)
+
+py_library(
+    name = "toplevel",
+    srcs = ["toplevel.py"],
+    tags = ["mypy"],
+)
+
+build_test(
+    name = "smoke_test",
+    targets = [
+        # keep sorted
+        "//:toplevel",
+        "//has_dependencies",
+        "//strict",
+        "//type_error",
+        "//uses_plugins",
+    ],
+)

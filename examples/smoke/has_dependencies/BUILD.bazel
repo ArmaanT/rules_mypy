@@ -1,0 +1,12 @@
+load("@rules_python//python:defs.bzl", "py_library")
+
+py_library(
+    name = "has_dependencies",
+    srcs = glob(["*.py"]),
+    tags = ["mypy"],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//basic",
+        "//type_error",
+    ],
+)

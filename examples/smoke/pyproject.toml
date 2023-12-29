@@ -1,0 +1,26 @@
+# Poetry is only used to generate a locked requirements.txt
+[tool.poetry]
+name = "smoke"
+version = "0.1.0"
+description = ""
+authors = []
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+mypy = "^1.8.0"
+pydantic = "^2.5.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+# Mypy configuration
+[tool.mypy]
+plugins = ["pydantic.mypy"]
+warn_unused_ignores = true
+warn_return_any = true
+exclude = [
+    "bazel-*"
+]

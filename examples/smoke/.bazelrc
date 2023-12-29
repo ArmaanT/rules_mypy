@@ -1,0 +1,1 @@
+common --aspects //:mypy.bzl%mypy

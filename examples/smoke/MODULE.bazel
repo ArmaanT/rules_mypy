@@ -1,0 +1,24 @@
+bazel_dep(name = "rules_mypy", version = "0.0.0", dev_dependency = True)
+
+bazel_dep(name = "rules_python", version = "0.27.1")
+
+bazel_dep(name = "bazel_skylib", version = "1.4.1", dev_dependency = True)
+
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(
+    is_default = True,
+    python_version = "3.11",
+)
+
+pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+pip.parse(
+    hub_name = "pypi",
+    python_version = "3.11",
+    requirements_lock = "//:requirements.txt",
+)
+use_repo(pip, "pypi")
+
+local_path_override(
+    module_name = "rules_mypy",
+    path = "../..",
+)
