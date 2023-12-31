@@ -156,7 +156,7 @@ def _mypy_aspect_impl(target, ctx):
             _validation = depset([junit]),
         ),
         MyPyCacheInfo(
-            cache_files = depset(transitive = [meta_files, data_files]),
+            cache_files = depset(transitive = [meta_files, data_files, cache_files]),
             cache_map = cache_map,
         ),
     ]
