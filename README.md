@@ -9,6 +9,7 @@ Bazel 6+ is supported
 - Incremental mypy typechecking for python targets
 - Allow mypy to be run in an opt-in or opt-opt fashion
 - Allow targets to opt-into mypy strict mode
+- Writes a junit result file into `bazel-bin`
 
 ## Example usage and documentation
 

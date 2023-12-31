@@ -111,7 +111,7 @@ def _mypy_aspect_impl(target, ctx):
 
     plugin_runfiles = depset(transitive = [plugin[DefaultInfo].default_runfiles.files for plugin in ctx.attr._plugins])
 
-    # Declare junit output files
+    # Declare junit output file
     junit = ctx.actions.declare_file("%s_mypy.junit" % ctx.rule.attr.name)
 
     # Mypy arguments
@@ -131,7 +131,7 @@ def _mypy_aspect_impl(target, ctx):
     args.add("--junit-xml")
     args.add(junit)
     args.add("--incremental")
-    args.add("--follow-import")
+    args.add("--follow-imports")
     args.add("silent")
     args.add("--explicit-package-bases")
     args.add("--cache-map")
