@@ -34,6 +34,24 @@ mypy = mypy_aspect(
 
 and adding `common --aspects //:mypy.bzl%mypy` to your bazelrc.
 
+If you want full incremental typechecking you must also create a `mypy_stdlib_cache` target to generate a mypy cache of the python standard library (through mypy's included typeshed directory):
+
+```bazel
+load("@pypi//:requirements.bzl", "requirement")
+
+mypy_stdlib_cache(
+    name = "stdlib_cache",
+    config = "//:pyproject.toml",
+    mypy = "//:mypy",
+    plugins = [
+        requirement("pydantic"),
+    ],
+    visibility = ["//visibility:public"],
+)
+```
+
+and add `mypy_stdlib_cache = Label("//:stdlib_cache")` to your `mypy_aspect` definition in `mypy.bzl`.
+
 ## Installation
 
 From the release you wish to use:
@@ -55,8 +73,8 @@ For example to use commit `abc123`:
 
 - `rules_mypy` only contains a mypy aspect. Eventually it should also provide a test target and possibly indpendent rule
 - `rules_mypy` assumes all python imports are relative from the root of the workspace, custom python target `imports` likely won't work
-- `--custom-typeshed-dir` isn't used with `py_console_script_binary`
 - Windows is not supported or tested
+- When in opt-in mode, python targets that depend on targets which aren't typechecked will have mypy typecheck its untyped dependencies each time mypy runs
 
 ## Acknowledgements
 
