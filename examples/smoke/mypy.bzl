@@ -13,4 +13,5 @@ mypy = mypy_aspect(
     plugins = [
         requirement("pydantic"),
     ],
+    mypy_stdlib_cache = Label("//:stdlib_cache"),
 )

@@ -1,6 +1,6 @@
 {
   "lockFileVersion": 3,
-  "moduleFileHash": "97f741add0c7c4bfa420f06522aa35dc08664a197bb1b1db188f2267cdc3ff04",
+  "moduleFileHash": "bb6abb834722bc319a5a31a837e4bffb1fd8fa09afd0911f248d9834c750e4db",
   "flags": {
     "cmdRegistries": [
       "https://bcr.bazel.build/"
@@ -31,7 +31,7 @@
           "usingModule": "<root>",
           "location": {
             "file": "@@//:MODULE.bazel",
-            "line": 5,
+            "line": 7,
             "column": 23
           },
           "imports": {},
@@ -40,13 +40,13 @@
             {
               "tagName": "toolchain",
               "attributeValues": {
-                "python_version": "3.11",
-                "is_default": true
+                "is_default": true,
+                "python_version": "3.11"
               },
               "devDependency": false,
               "location": {
                 "file": "@@//:MODULE.bazel",
-                "line": 7,
+                "line": 8,
                 "column": 17
               }
             }
@@ -60,7 +60,7 @@
           "usingModule": "<root>",
           "location": {
             "file": "@@//:MODULE.bazel",
-            "line": 12,
+            "line": 13,
             "column": 20
           },
           "imports": {
