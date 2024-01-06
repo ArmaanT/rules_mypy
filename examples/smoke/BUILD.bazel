@@ -34,7 +34,9 @@ build_test(
         # keep sorted
         "//:toplevel",
         "//has_dependencies",
+        "//many_third_party_deps",
         "//strict",
+        "//third_party_types_package",
         "//type_error",
         "//uses_plugins",
     ],
