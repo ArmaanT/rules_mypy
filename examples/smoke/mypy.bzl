@@ -13,5 +13,9 @@ mypy = mypy_aspect(
     plugins = [
         requirement("pydantic"),
     ],
+    to_ignore = [
+        requirement("numpy"),
+    ],
     mypy_stdlib_cache = Label("//:stdlib_cache"),
+    verbose = True,
 )

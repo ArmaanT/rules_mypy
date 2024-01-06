@@ -1,0 +1,21 @@
+load("@rules_python//python:defs.bzl", "py_library")
+load("@pypi//:requirements.bzl", "requirement")
+
+py_library(
+    name = "many_third_party_deps",
+    srcs = glob(["*.py"]),
+    tags = ["mypy"],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        # keep sorted
+        "//uses_plugins",
+        requirement("tzdata"),
+        requirement("boto3"),
+        requirement("django"),
+        requirement("fastapi"),
+        requirement("pandas"),
+        requirement("pydantic"),
+        requirement("pytest"),
+        requirement("requests"),
+    ],
+)
