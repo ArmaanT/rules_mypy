@@ -110,9 +110,12 @@ def _extract_python_files(labels):
 
     return direct_files, should_type_check
 
-def _generate_direct_cache_map(ctx, direct_python_files, dest_override = None):
+def _generate_direct_cache_map(ctx, direct_python_files, out_dir = None):
     """
     Generate the direct cache map while also declaring output meta and data json files
+
+    If `out_dir` (an instance of `ctx.actions.declare_directory`) is defined, place
+    meta and data json files in that directory
     """
 
     triples_as_flat_list = []
@@ -125,13 +128,17 @@ def _generate_direct_cache_map(ctx, direct_python_files, dest_override = None):
             package += "/"
         offset = 1 if package == "/" else 0
         relative_path = f.path[len(package) - offset:]
-        if dest_override:
-            relative_path = dest_override + relative_path
-        meta = ctx.actions.declare_file(relative_path + ".meta.json")
-        data = ctx.actions.declare_file(relative_path + ".data.json")
-        triples_as_flat_list.extend([f.path, meta.path, data.path])
-        meta_files.append(meta)
-        data_files.append(data)
+        if not out_dir:
+            meta = ctx.actions.declare_file(relative_path + ".meta.json")
+            data = ctx.actions.declare_file(relative_path + ".data.json")
+            triples_as_flat_list.extend([f.path, meta.path, data.path])
+            meta_files.append(meta)
+            data_files.append(data)
+        else:
+            meta = out_dir.path + "/" + relative_path + ".meta.json"
+            data = out_dir.path + "/" + relative_path + ".data.json"
+            triples_as_flat_list.extend([f.path, meta, data])
+
     return depset(meta_files), depset(data_files), triples_as_flat_list
 
 def _generate_transitive_cache_map(deps):
@@ -371,42 +378,14 @@ def mypy_aspect(binary, config, plugins = None, to_ignore = None, cache_third_pa
     )
 
 def _mypy_stdlib_cache_impl(ctx):
-    # Files that mypy doesn't generate json cache files for.
-    blacklist = [
-        "_bootlocale.pyi",
-        "_dummy_thread.pyi",
-        "_dummy_threading.pyi",
-        "binhex.pyi",
-        "distutils/command/bdist_msi.pyi",
-        "distutils/command/bdist_wininst.pyi",
-        "dummy_threading.pyi",
-        "formatter.pyi",
-        "macpath.pyi",
-        "parser.pyi",
-        "symbol.pyi",
-        "sys/_monitoring.pyi",
-        "_bootlocale.pyi",
-        "_dummy_thread.pyi",
-        "_dummy_threading.pyi",
-        "binhex.pyi",
-        "distutils/command/bdist_msi.pyi",
-        "distutils/command/bdist_wininst.pyi",
-        "dummy_threading.pyi",
-        "formatter.pyi",
-        "macpath.pyi",
-        "parser.pyi",
-        "symbol.pyi",
-        "sys/_monitoring.pyi",
-    ]
-
     # Get all stdlib pyi files in the mypy typeshed directory
     direct_python_files = []
     for file in ctx.attr.mypy[DefaultInfo].default_runfiles.files.to_list():
-        if any([f in file.path for f in blacklist]):
-            continue
         if "site-packages/mypy/typeshed/stdlib" in file.path and file.extension == "pyi":
             direct_python_files.append(file)
-    meta_files, data_files, cache_map = _generate_direct_cache_map(ctx, direct_python_files, ctx.attr.name + "/")
+
+    out_dir = ctx.actions.declare_directory(ctx.attr.name)
+    _, _, cache_map = _generate_direct_cache_map(ctx, direct_python_files, out_dir)
 
     # Convert the stdlib pyi files into a list of imports
     imports = []
@@ -451,7 +430,7 @@ def _mypy_stdlib_cache_impl(ctx):
     args.add(importer)
 
     ctx.actions.run(
-        outputs = meta_files.to_list() + data_files.to_list(),
+        outputs = [out_dir],
         inputs = depset([ctx.file.config, importer], transitive = inputs),
         arguments = [args],
         executable = ctx.executable.mypy,
@@ -462,7 +441,7 @@ def _mypy_stdlib_cache_impl(ctx):
         },
     )
 
-    cache_files = depset(transitive = [meta_files, data_files])
+    cache_files = depset([out_dir])
 
     return [
         DefaultInfo(files = cache_files),

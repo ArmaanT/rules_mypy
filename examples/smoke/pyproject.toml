@@ -37,5 +37,18 @@ exclude = [
 [[tool.mypy.overrides]]
 module = [
     "tzdata.*",
+    # In mypy typeshed but not in python 3.11
+    "_bootlocale",
+    "_dummy_thread",
+    "_dummy_threading",
+    "binhex",
+    "distutils.command.bdist_msi",
+    "distutils.command.bdist_wininst",
+    "dummy_threading",
+    "formatter",
+    "macpath",
+    "parser",
+    "symbol",
+    "sys._monitoring",
 ]
 ignore_missing_imports = true
