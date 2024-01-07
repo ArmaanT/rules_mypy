@@ -266,6 +266,8 @@ def _mypy_aspect_impl(target, ctx):
 
     # Mypy arguments
     args = ctx.actions.args()
+    args.use_param_file("@%s", use_always = True)
+    args.set_param_file_format("multiline")
     if ctx.attr.verbose:
         args.add("--verbose")
     if strict:
