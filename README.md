@@ -69,6 +69,35 @@ For example to use commit `abc123`:
    guarantee on the sha256 stability, see
    <https://github.blog/2023-02-21-update-on-the-future-stability-of-source-code-archives-and-hashes/>
 
+## Using mypy_stdlib_cache
+
+You will likely have to tell mypy to ignore various mypy stdlib pyi files that don't actually exist in your version of python. Nomally these are modules that have been removed in a previous version of python or modules that are added in future versions. An easy way of doing this is to add the following snippet to your mypy config file (`pyproject.toml` in this example):
+
+```toml
+[[tool.mypy.overrides]]
+module = [
+    # Needed for python 3.8 since these modules don't exist in its stdlib
+    "asyncio.mixins",
+    "asyncio.taskgroups",
+    "asyncio.threads",
+    "asyncio.timeouts",
+    "graphlib",
+    "importlib.metadata._meta",
+    "importlib.readers",
+    "importlib.resources.abc",
+    "importlib.resources.readers",
+    "importlib.resources.simple",
+    "importlib.simple",
+    "macpath",
+    "sys._monitoring",
+    "tomllib",
+    "unittest._log",
+    "wsgiref.types",
+    "zoneinfo",
+]
+ignore_missing_imports = true
+```
+
 ## Known limitations
 
 - `rules_mypy` only contains a mypy aspect. Eventually it should also provide a test target and possibly indpendent rule
