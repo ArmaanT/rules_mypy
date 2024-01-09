@@ -191,7 +191,7 @@ def _mypy_aspect_impl(target, ctx):
     is_external = target.label.workspace_root.startswith("external/")
 
     # Do not run on internal targets without a mypy tag when in `opt-in` mode
-    if ctx.attr.opt_in and not mypy and not strict and not is_external:
+    if ctx.attr.mypy_opt_in and not mypy and not strict and not is_external:
         return []
 
     # Do not run on external targets if `cache_third_party` is false
@@ -270,7 +270,7 @@ def _mypy_aspect_impl(target, ctx):
     args = ctx.actions.args()
     args.use_param_file("@%s", use_always = True)
     args.set_param_file_format("multiline")
-    if ctx.attr.verbose:
+    if ctx.attr.mypy_verbose:
         args.add("--verbose")
     if strict:
         args.add("--strict")
@@ -359,8 +359,8 @@ def mypy_aspect(binary, config, plugins = None, to_ignore = None, cache_third_pa
             default = to_ignore or [],
             providers = [PyInfo],
         ),
-        "verbose": attr.bool(default = verbose),
-        "opt_in": attr.bool(default = opt_in),
+        "mypy_verbose": attr.bool(default = verbose),
+        "mypy_opt_in": attr.bool(default = opt_in),
         "cache_third_party": attr.bool(default = cache_third_party),
     }
 
