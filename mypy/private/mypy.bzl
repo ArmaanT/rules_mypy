@@ -2,6 +2,8 @@
 Mypy utilities for bazel. Currently just an aspect.
 """
 
+PYTHON_TOOLCHAIN = "@bazel_tools//tools/python:toolchain_type"
+
 MyPyCacheInfo = provider(
     "Provider that aggregates mypy cached files",
     fields = {
@@ -203,6 +205,7 @@ def _mypy_aspect_impl(target, ctx):
         return []
 
     # Gather variables
+    toolchain = ctx.toolchains[PYTHON_TOOLCHAIN]
 
     # Get all direct python files
     direct_python_src_files, _ = _extract_python_files(ctx.rule.attr.srcs)
@@ -214,10 +217,12 @@ def _mypy_aspect_impl(target, ctx):
         return []
 
     # Create PYTHONPATH using python target imports, plugin imports, and plugin directories
+    mypy_import_paths = ["external/" + i for i in ctx.attr._mypy[PyInfo].imports.to_list()]
+    mypy_path = ctx.attr._mypy.label.workspace_root + "/site-packages"
     import_paths = ["external/" + f for f in target[PyInfo].imports.to_list()]
     plugin_import_paths = ["external/" + i for plugin in ctx.attr._plugins for i in plugin[PyInfo].imports.to_list()]
     plugin_paths = [plugin.label.workspace_root + "/site-packages" for plugin in ctx.attr._plugins]
-    python_path = ["."] + import_paths + plugin_import_paths + plugin_paths
+    python_path = [".", mypy_path] + import_paths + mypy_import_paths + plugin_import_paths + plugin_paths
 
     # Generate a deduplicated transitive cache_map. Include stdlib cache if provided
     meta_files, data_files, direct_cache_map = _generate_direct_cache_map(ctx, direct_python_files)
@@ -227,10 +232,11 @@ def _mypy_aspect_impl(target, ctx):
     cache_map = _deduplicate_cache_map(direct_cache_map, transitive_cache_map)
 
     # Inputs to mypy
+    python_runfiles = toolchain.py3_runtime.files
     target_runfiles = target[DefaultInfo].default_runfiles.files
     mypy_runfiles = ctx.attr._mypy[DefaultInfo].default_runfiles.files
     plugin_runfiles = depset(transitive = [plugin[DefaultInfo].default_runfiles.files for plugin in ctx.attr._plugins])
-    transitive_inputs = [target_runfiles, mypy_runfiles, cache_files, plugin_runfiles]
+    transitive_inputs = [python_runfiles, target_runfiles, mypy_runfiles, cache_files, plugin_runfiles]
     if ctx.attr._mypy_stdlib_cache:
         transitive_inputs.append(ctx.attr._mypy_stdlib_cache[MyPyCacheInfo].cache_files)
 
@@ -267,39 +273,42 @@ def _mypy_aspect_impl(target, ctx):
     junit = ctx.actions.declare_file("%s_mypy.junit" % ctx.rule.attr.name)
 
     # Mypy arguments
-    args = ctx.actions.args()
-    args.use_param_file("@%s", use_always = True)
-    args.set_param_file_format("multiline")
+    python_args = ctx.actions.args()
+    python_args.add("-c")
+    python_args.add("import sys;from mypy.__main__ import console_entry;sys.exit(console_entry())")
+    mypy_args = ctx.actions.args()
+    mypy_args.use_param_file("@%s", use_always = True)
+    mypy_args.set_param_file_format("multiline")
     if ctx.attr.mypy_verbose:
-        args.add("--verbose")
+        mypy_args.add("--verbose")
     if strict:
-        args.add("--strict")
-    args.add("--bazel")
-    args.add("--skip-cache-mtime-checks")
-    args.add("--no-error-summary")
-    args.add("--config-file")
-    args.add(ctx.file._config)
-    args.add("--custom-typeshed-dir")
-    args.add(_get_mypy_typeshed_dir(ctx.attr._mypy))
-    args.add("--junit-xml")
-    args.add(junit)
-    args.add("--incremental")
-    args.add("--follow-imports")
-    args.add("silent")
-    args.add("--explicit-package-bases")
-    args.add("--cache-map")
-    args.add_all(cache_map)
-    args.add("--")
+        mypy_args.add("--strict")
+    mypy_args.add("--bazel")
+    mypy_args.add("--skip-cache-mtime-checks")
+    mypy_args.add("--no-error-summary")
+    mypy_args.add("--config-file")
+    mypy_args.add(ctx.file._config)
+    mypy_args.add("--custom-typeshed-dir")
+    mypy_args.add(_get_mypy_typeshed_dir(ctx.attr._mypy))
+    mypy_args.add("--junit-xml")
+    mypy_args.add(junit)
+    mypy_args.add("--incremental")
+    mypy_args.add("--follow-imports")
+    mypy_args.add("silent")
+    mypy_args.add("--explicit-package-bases")
+    mypy_args.add("--cache-map")
+    mypy_args.add_all(cache_map)
+    mypy_args.add("--")
     if is_external:
-        args.add(external_importer)
+        mypy_args.add(external_importer)
     else:
-        args.add_all(direct_python_files)
+        mypy_args.add_all(direct_python_files)
 
     ctx.actions.run(
         outputs = [junit] + meta_files.to_list() + data_files.to_list(),
         inputs = input_depset,
-        arguments = [args],
-        executable = ctx.executable._mypy,
+        arguments = [python_args, mypy_args],
+        executable = toolchain.py3_runtime.interpreter,
         mnemonic = "MyPy",
         progress_message = "Type-checking %s" % ctx.label,
         env = env,
@@ -315,12 +324,12 @@ def _mypy_aspect_impl(target, ctx):
         ),
     ]
 
-def mypy_aspect(binary, config, plugins = None, to_ignore = None, cache_third_party = True, mypy_stdlib_cache = None, verbose = False, opt_in = True):
+def mypy_aspect(mypy, config, plugins = None, to_ignore = None, cache_third_party = True, mypy_stdlib_cache = None, verbose = False, opt_in = True):
     """
     Create a mypy bazel aspect to typecheck python targets.
 
     Args:
-        binary: The mypy binary to use. Expected to be either a rules_python entry_point or py_console_script_binary
+        mypy: The mypy package to use. Expected to be a rules_python package from `pip_parse`.
         config: A config file to pass to mypy. Generally a pyproject.toml or mypy.ini
         plugins: A list of plugins that are passed to mypy. Plugins are expected to be sourced from rules_python `pip_parse`.
 
@@ -340,9 +349,7 @@ def mypy_aspect(binary, config, plugins = None, to_ignore = None, cache_third_pa
 
     attrs = {
         "_mypy": attr.label(
-            default = binary,
-            executable = True,
-            cfg = "exec",
+            default = mypy,
             allow_files = True,
             providers = [PyInfo],
         ),
@@ -379,9 +386,12 @@ def mypy_aspect(binary, config, plugins = None, to_ignore = None, cache_third_pa
         implementation = _mypy_aspect_impl,
         attr_aspects = ["deps"],
         attrs = attrs,
+        toolchains = [PYTHON_TOOLCHAIN],
     )
 
 def _mypy_stdlib_cache_impl(ctx):
+    toolchain = ctx.toolchains[PYTHON_TOOLCHAIN]
+
     # Get all stdlib pyi files in the mypy typeshed directory
     direct_python_files = []
     for file in ctx.attr.mypy[DefaultInfo].default_runfiles.files.to_list():
@@ -406,17 +416,22 @@ def _mypy_stdlib_cache_impl(ctx):
     ctx.actions.write(importer, "\n".join(imports))
 
     # Create PYTHONPATH using plugin imports and plugin directories
+    mypy_import_paths = ["external/" + i for i in ctx.attr.mypy[PyInfo].imports.to_list()]
+    mypy_path = ctx.attr.mypy.label.workspace_root + "/site-packages"
     plugin_import_paths = ["external/" + i for plugin in ctx.attr.plugins for i in plugin[PyInfo].imports.to_list()]
     plugin_paths = [plugin.label.workspace_root + "/site-packages" for plugin in ctx.attr.plugins]
-    python_path = ["."] + plugin_import_paths + plugin_paths
+    python_path = [".", mypy_path] + mypy_import_paths + plugin_import_paths + plugin_paths
 
     # Inputs to mypy
+    python_runfiles = toolchain.py3_runtime.files
     mypy_runfiles = ctx.attr.mypy[DefaultInfo].default_runfiles.files
     plugin_runfiles = depset(transitive = [plugin[DefaultInfo].default_runfiles.files for plugin in ctx.attr.plugins])
-    inputs = [mypy_runfiles, plugin_runfiles]
+    inputs = [python_runfiles, mypy_runfiles, plugin_runfiles]
 
     # Mypy arguments. Very large overlap with the mypy aspect.
     args = ctx.actions.args()
+    args.add("-c")
+    args.add("import sys;from mypy.__main__ import console_entry;sys.exit(console_entry())")
     args.add("--bazel")
     args.add("--skip-cache-mtime-checks")
     args.add("--no-error-summary")
@@ -437,7 +452,7 @@ def _mypy_stdlib_cache_impl(ctx):
         outputs = [out_dir],
         inputs = depset([ctx.file.config, importer], transitive = inputs),
         arguments = [args],
-        executable = ctx.executable.mypy,
+        executable = toolchain.py3_runtime.interpreter,
         mnemonic = "MyPy",
         progress_message = "Caching mypy typeshed",
         env = {
@@ -460,10 +475,8 @@ mypy_stdlib_cache = rule(
     implementation = _mypy_stdlib_cache_impl,
     attrs = {
         "mypy": attr.label(
-            doc = "The mypy binary to use. Expected to be either a rules_python entry_point or py_console_script_binary",
+            doc = "The mypy package to use. Expected to be a rules_python package from `pip_parse`.",
             mandatory = True,
-            executable = True,
-            cfg = "exec",
             allow_files = True,
             providers = [PyInfo],
         ),
@@ -479,4 +492,5 @@ mypy_stdlib_cache = rule(
             providers = [PyInfo],
         ),
     },
+    toolchains = [PYTHON_TOOLCHAIN],
 )
