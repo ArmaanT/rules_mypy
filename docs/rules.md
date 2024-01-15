@@ -19,7 +19,7 @@ Rule to generate a mypy cache of the python stdlib.
 | :------------- | :------------- | :------------- | :------------- | :------------- |
 | <a id="mypy_stdlib_cache-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
 | <a id="mypy_stdlib_cache-config"></a>config |  A config file to pass to mypy. Generally a pyproject.toml or mypy.ini   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
-| <a id="mypy_stdlib_cache-mypy"></a>mypy |  The mypy binary to use. Expected to be either a rules_python entry_point or py_console_script_binary   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
+| <a id="mypy_stdlib_cache-mypy"></a>mypy |  The mypy package to use. Expected to be a rules_python package from <code>pip_parse</code>.   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
 | <a id="mypy_stdlib_cache-plugins"></a>plugins |  A list of plugins that are passed to mypy. Plugins are expected to be sourced from rules_python <code>pip_parse</code>   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional | <code>[]</code> |
 
 
@@ -28,8 +28,7 @@ Rule to generate a mypy cache of the python stdlib.
 ## mypy_aspect
 
 <pre>
-mypy_aspect(<a href="#mypy_aspect-binary">binary</a>, <a href="#mypy_aspect-config">config</a>, <a href="#mypy_aspect-plugins">plugins</a>, <a href="#mypy_aspect-to_ignore">to_ignore</a>, <a href="#mypy_aspect-cache_third_party">cache_third_party</a>, <a href="#mypy_aspect-mypy_stdlib_cache">mypy_stdlib_cache</a>, <a href="#mypy_aspect-verbose">verbose</a>,
-            <a href="#mypy_aspect-opt_in">opt_in</a>)
+mypy_aspect(<a href="#mypy_aspect-mypy">mypy</a>, <a href="#mypy_aspect-config">config</a>, <a href="#mypy_aspect-plugins">plugins</a>, <a href="#mypy_aspect-to_ignore">to_ignore</a>, <a href="#mypy_aspect-cache_third_party">cache_third_party</a>, <a href="#mypy_aspect-mypy_stdlib_cache">mypy_stdlib_cache</a>, <a href="#mypy_aspect-verbose">verbose</a>, <a href="#mypy_aspect-opt_in">opt_in</a>)
 </pre>
 
     Create a mypy bazel aspect to typecheck python targets.
@@ -39,7 +38,7 @@ mypy_aspect(<a href="#mypy_aspect-binary">binary</a>, <a href="#mypy_aspect-conf
 
 | Name  | Description | Default Value |
 | :------------- | :------------- | :------------- |
-| <a id="mypy_aspect-binary"></a>binary |  The mypy binary to use. Expected to be either a rules_python entry_point or py_console_script_binary   |  none |
+| <a id="mypy_aspect-mypy"></a>mypy |  The mypy package to use. Expected to be a rules_python package from <code>pip_parse</code>.   |  none |
 | <a id="mypy_aspect-config"></a>config |  A config file to pass to mypy. Generally a pyproject.toml or mypy.ini   |  none |
 | <a id="mypy_aspect-plugins"></a>plugins |  A list of plugins that are passed to mypy. Plugins are expected to be sourced from rules_python <code>pip_parse</code>.<br><br>Note: You must also define these plugins in your mypy config file for mypy to use them.   |  <code>None</code> |
 | <a id="mypy_aspect-to_ignore"></a>to_ignore |  A list of external python targets to skip caching. Only relevant when <code>cache_third_party</code> is true.   |  <code>None</code> |
