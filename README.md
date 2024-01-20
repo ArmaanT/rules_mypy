@@ -21,10 +21,10 @@ The minimal configuration needed to use `rules_mypy` looks something like a `myp
 
 ```bazel
 load("@rules_mypy//mypy:defs.bzl", "mypy_aspect")
-load("@pypi//:requirements.bzl", "entry_point", "requirement")
+load("@pypi//:requirements.bzl", "requirement")
 
 mypy = mypy_aspect(
-    binary = entry_point("mypy"),
+    mypy = requirement("mypy"),
     config = Label(":pyproject.toml"),
     plugins = [
         requirement("pydantic"),
@@ -42,7 +42,7 @@ load("@pypi//:requirements.bzl", "requirement")
 mypy_stdlib_cache(
     name = "stdlib_cache",
     config = "//:pyproject.toml",
-    mypy = "//:mypy",
+    mypy = requirement("mypy"),
     plugins = [
         requirement("pydantic"),
     ],
