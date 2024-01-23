@@ -316,7 +316,9 @@ def _mypy_aspect_impl(target, ctx):
 
     return [
         OutputGroupInfo(
-            _validation = depset([junit]),
+            **{
+                ctx.attr.mypy_output_group: depset([junit]),
+            }
         ),
         MyPyCacheInfo(
             cache_files = depset(transitive = [meta_files, data_files, cache_files]),
@@ -324,7 +326,16 @@ def _mypy_aspect_impl(target, ctx):
         ),
     ]
 
-def mypy_aspect(mypy, config, plugins = None, to_ignore = None, cache_third_party = True, mypy_stdlib_cache = None, verbose = False, opt_in = True):
+def mypy_aspect(
+        mypy,
+        config,
+        plugins = None,
+        to_ignore = None,
+        cache_third_party = True,
+        mypy_stdlib_cache = None,
+        verbose = False,
+        opt_in = True,
+        output_group = "_validation"):
     """
     Create a mypy bazel aspect to typecheck python targets.
 
@@ -342,6 +353,8 @@ def mypy_aspect(mypy, config, plugins = None, to_ignore = None, cache_third_part
 
             When in opt-in mode python targets must have either a `mypy` or `mypy-strict` tag in order to be typechecked. When
             in opt-out mode, all python targets are typechecked.
+        output_group: The output group used for the aspect. Defaults to `_validation`, `mypy` is recommended if you
+            don't want to run mypy all of the time.
 
     Returns:
         A mypy_aspect
@@ -366,6 +379,7 @@ def mypy_aspect(mypy, config, plugins = None, to_ignore = None, cache_third_part
             default = to_ignore or [],
             providers = [PyInfo],
         ),
+        "mypy_output_group": attr.string(default = output_group),
         "mypy_verbose": attr.bool(default = verbose),
         "mypy_opt_in": attr.bool(default = opt_in),
         "cache_third_party": attr.bool(default = cache_third_party),

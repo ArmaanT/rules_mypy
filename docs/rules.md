@@ -28,7 +28,8 @@ Rule to generate a mypy cache of the python stdlib.
 ## mypy_aspect
 
 <pre>
-mypy_aspect(<a href="#mypy_aspect-mypy">mypy</a>, <a href="#mypy_aspect-config">config</a>, <a href="#mypy_aspect-plugins">plugins</a>, <a href="#mypy_aspect-to_ignore">to_ignore</a>, <a href="#mypy_aspect-cache_third_party">cache_third_party</a>, <a href="#mypy_aspect-mypy_stdlib_cache">mypy_stdlib_cache</a>, <a href="#mypy_aspect-verbose">verbose</a>, <a href="#mypy_aspect-opt_in">opt_in</a>)
+mypy_aspect(<a href="#mypy_aspect-mypy">mypy</a>, <a href="#mypy_aspect-config">config</a>, <a href="#mypy_aspect-plugins">plugins</a>, <a href="#mypy_aspect-to_ignore">to_ignore</a>, <a href="#mypy_aspect-cache_third_party">cache_third_party</a>, <a href="#mypy_aspect-mypy_stdlib_cache">mypy_stdlib_cache</a>, <a href="#mypy_aspect-verbose">verbose</a>, <a href="#mypy_aspect-opt_in">opt_in</a>,
+            <a href="#mypy_aspect-output_group">output_group</a>)
 </pre>
 
     Create a mypy bazel aspect to typecheck python targets.
@@ -46,6 +47,7 @@ mypy_aspect(<a href="#mypy_aspect-mypy">mypy</a>, <a href="#mypy_aspect-config">
 | <a id="mypy_aspect-mypy_stdlib_cache"></a>mypy_stdlib_cache |  An optional instantiation of <code>mypy_stdlib_cache</code>. Required to get full incremental typechecking.   |  <code>None</code> |
 | <a id="mypy_aspect-verbose"></a>verbose |  Run mypy in verbose mode. Likely not needed for general use.   |  <code>False</code> |
 | <a id="mypy_aspect-opt_in"></a>opt_in |  Should the mypy aspect be opt-in or opt-out (default opt-in).<br><br>When in opt-in mode python targets must have either a <code>mypy</code> or <code>mypy-strict</code> tag in order to be typechecked. When in opt-out mode, all python targets are typechecked.   |  <code>True</code> |
+| <a id="mypy_aspect-output_group"></a>output_group |  The output group used for the aspect. Defaults to <code>_validation</code>, <code>mypy</code> is recommended if you don't want to run mypy all of the time.   |  <code>"_validation"</code> |
 
 **RETURNS**
 
