@@ -114,17 +114,14 @@ def _extract_python_files(labels):
 
     return direct_files, should_type_check
 
-def _generate_direct_cache_map(ctx, direct_python_files, out_dir = None):
+def _generate_direct_cache_map(ctx, direct_python_files, out_dir):
     """
-    Generate the direct cache map while also declaring output meta and data json files
+    Generate the direct cache map for a set of direct python files.
 
-    If `out_dir` (an instance of `ctx.actions.declare_directory`) is defined, place
-    meta and data json files in that directory
+    Meta and data json files will be placed inside of out_dir.
     """
 
     triples_as_flat_list = []
-    meta_files = []
-    data_files = []
 
     for f in direct_python_files:
         package = ctx.label.package
@@ -132,18 +129,11 @@ def _generate_direct_cache_map(ctx, direct_python_files, out_dir = None):
             package += "/"
         offset = 1 if package == "/" else 0
         relative_path = f.path[len(package) - offset:]
-        if not out_dir:
-            meta = ctx.actions.declare_file(relative_path + ".meta.json")
-            data = ctx.actions.declare_file(relative_path + ".data.json")
-            triples_as_flat_list.extend([f.path, meta.path, data.path])
-            meta_files.append(meta)
-            data_files.append(data)
-        else:
-            meta = out_dir.path + "/" + relative_path + ".meta.json"
-            data = out_dir.path + "/" + relative_path + ".data.json"
-            triples_as_flat_list.extend([f.path, meta, data])
+        meta = out_dir.path + "/" + relative_path + ".meta.json"
+        data = out_dir.path + "/" + relative_path + ".data.json"
+        triples_as_flat_list.extend([f.path, meta, data])
 
-    return depset(meta_files), depset(data_files), triples_as_flat_list
+    return triples_as_flat_list
 
 def _generate_transitive_cache_map(deps):
     """
@@ -225,7 +215,8 @@ def _mypy_aspect_impl(target, ctx):
     python_path = [".", mypy_path] + import_paths + mypy_import_paths + plugin_import_paths + plugin_paths
 
     # Generate a deduplicated transitive cache_map. Include stdlib cache if provided
-    meta_files, data_files, direct_cache_map = _generate_direct_cache_map(ctx, direct_python_files)
+    out_dir = ctx.actions.declare_directory(target.label.name + "_mypy_cache")
+    direct_cache_map = _generate_direct_cache_map(ctx, direct_python_files, out_dir)
     cache_files, transitive_cache_map = _generate_transitive_cache_map(ctx.rule.attr.deps)
     if ctx.attr._mypy_stdlib_cache:
         transitive_cache_map.extend(ctx.attr._mypy_stdlib_cache[MyPyCacheInfo].cache_map)
@@ -305,7 +296,7 @@ def _mypy_aspect_impl(target, ctx):
         mypy_args.add_all(direct_python_files)
 
     ctx.actions.run(
-        outputs = [junit] + meta_files.to_list() + data_files.to_list(),
+        outputs = [junit, out_dir],
         inputs = input_depset,
         arguments = [python_args, mypy_args],
         executable = toolchain.py3_runtime.interpreter,
@@ -319,7 +310,7 @@ def _mypy_aspect_impl(target, ctx):
             _validation = depset([junit]),
         ),
         MyPyCacheInfo(
-            cache_files = depset(transitive = [meta_files, data_files, cache_files]),
+            cache_files = depset([out_dir], transitive = [cache_files]),
             cache_map = cache_map,
         ),
     ]
@@ -399,7 +390,7 @@ def _mypy_stdlib_cache_impl(ctx):
             direct_python_files.append(file)
 
     out_dir = ctx.actions.declare_directory(ctx.attr.name)
-    _, _, cache_map = _generate_direct_cache_map(ctx, direct_python_files, out_dir)
+    cache_map = _generate_direct_cache_map(ctx, direct_python_files, out_dir)
 
     # Convert the stdlib pyi files into a list of imports
     imports = []
